@@ -8,7 +8,7 @@ testEquality() {
 
 testSingleWordRegex() {
   actual="$(echo "aaabbbccc" | hi b 2> /dev/null)"
-  expected="$(echo -e "aaa""\e[1;30m""b""\e[0m""bbccc")"
+  expected="$(echo -e "aaa""\e[1;30m""bbb""\e[0m""ccc")"
   assertEquals "${expected}" "${actual}" 
 }
 
@@ -36,7 +36,7 @@ testTwoOverlapingRegexesLongerAfter() {
   assertEquals "${expected}" "${actual}" 
 }
 
-testSinglePatternRegexNultipleOccurences() {
+testSinglePatternRegexMultipleOccurences() {
   actual="$(echo "aaabbbcccbbb" | hi b+ 2> /dev/null)"
   expected="$(echo -e "aaa""\e[1;30m""bbb""\e[0m""ccc""\e[1;30m""bbb""\e[0m")"
   assertEquals "${expected}" "${actual}" 

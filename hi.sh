@@ -44,13 +44,17 @@ hi() {
       # >&2 echo "# CURRENT regex: $regex" 
       while true
       do
-        local se=$(echo "${line:${lineIndex}}" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
+        [ $lineIndex -ge ${#line} ] && break
+
+        local subLine=${line:${lineIndex}}
+        >&2 echo "* lineIndex: ${lineIndex} => ${subLine}"
+        local se=$(echo "${subLine}" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
         # >&2 echo "# CURRENT se: $se" 
         [ -z "$se" ] && break
 
         let start=${se%-*}+$lineIndex
         let end=${se#*-}+$lineIndex
-        lineIndex=$end
+        let lineIndex=$end-1
         # >&2 echo "$start -> $end"
 
         for i in $(seq $start $end)
@@ -82,7 +86,7 @@ hi() {
 
     local outputLine=""
     
-    # >&2 declare -p charColors 
+    >&2 declare -p charColors 
 
     local firstKey=("${!charColors[@]}")
     # >&2 echo "# firstKey=${firstKey}" 
@@ -98,13 +102,14 @@ hi() {
     for charColorIndex in "${!charColors[@]}"
     do
       charColor=${charColors[charColorIndex]}
-      if [[ "$color" != "$charColor" ]]
+      let diff=charColorIndex-colorEnd
+      if [[ "$color" != "$charColor" ]] || [ $diff -gt 1 ]
       then
-        # >&2 echo '** "$color" != "$charColor"' 
+        >&2 echo '** "$color" != "$charColor"' 
 
-        # >&2 echo "# color=${color}" 
-        # >&2 echo "# colorStart=${colorStart}" 
-        # >&2 echo "# colorEnd=${colorEnd}" 
+        >&2 echo "# color=${color}" 
+        >&2 echo "# colorStart=${colorStart}" 
+        >&2 echo "# colorEnd=${colorEnd}" 
 
         outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
         outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
@@ -123,9 +128,9 @@ hi() {
     done
 
 
-    # >&2 echo "# color=${color}" 
-    # >&2 echo "# colorStart=${colorStart}" 
-    # >&2 echo "# colorEnd=${colorEnd}" 
+    >&2 echo "# color=${color}" 
+    >&2 echo "# colorStart=${colorStart}" 
+    >&2 echo "# colorEnd=${colorEnd}" 
 
     outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
     outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
