@@ -1,8 +1,15 @@
 hi() { 
 
-
   usage() {
-      >&2 echo "# usage: SOME_COMMAND | hi regex1 [regexN...]" 
+    log_info "# usage: SOME_COMMAND | hi regex1 [regexN...]"
+  }
+
+  log_info() {
+    echo "$@" >&2
+  }
+
+  log_debug() {
+    [ ! -z $DEBUG ] && log_info "# DEBUG - $@"
   }
 
   # detect pipe or tty
@@ -11,25 +18,24 @@ hi() {
       return
   fi
   
-  declare -a r;
-  r[0]=30 #black
-  r[1]=31 #red
-  r[2]=32 #green
-  r[3]=33 #yellow
-  r[4]=34 #blue
-  r[5]=35 #magenta
-  r[6]=36 #cyan
+  declare -a color_map;
+  color_map[0]=30 #black
+  color_map[1]=31 #red
+  color_map[2]=32 #green
+  color_map[3]=33 #yellow
+  color_map[4]=34 #blue
+  color_map[5]=35 #magenta
+  color_map[6]=36 #cyan
 
-  if [[ "$#" -gt ${#r[@]} ]]; then
-    >&2 echo "More regex patterns received than available colors."
+  if [[ "$#" -gt ${#color_map[@]} ]]; then
+    log_debug "#More regex patterns received than available colors."
     return 1
   fi
 
   IFS=$'\n'
-
   for line in $(cat)
   do
-    # >&2 echo "# CURRENT line: $line" 
+    log_debug "line: $line" 
 
     local ri=0
     unset charColors
@@ -41,55 +47,45 @@ hi() {
       local lineIndex=0
       local se=0-0
 
-      # >&2 echo "# CURRENT regex: $regex" 
+      log_debug "regex: $regex" 
       while true
       do
         [ $lineIndex -ge ${#line} ] && break
 
         local subLine=${line:${lineIndex}}
-        >&2 echo "* lineIndex: ${lineIndex} => ${subLine}"
+        log_debug "lineIndex: ${lineIndex} => ${subLine}"
         local se=$(echo "${subLine}" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
-        # >&2 echo "# CURRENT se: $se" 
+        log_debug "se: $se" 
         [ -z "$se" ] && break
 
         let start=${se%-*}+$lineIndex
         let end=${se#*-}+$lineIndex
         let lineIndex=$end-1
-        # >&2 echo "$start -> $end"
+        log_debug "$start -> $end"
 
         for i in $(seq $start $end)
         do 
-          # >&2 echo "# CURRENT i: ${i}" 
-          charColors[$i]="${r[ri]}"
+          log_debug "i: ${i}" 
+          charColors[$i]="${color_map[ri]}"
         done
       done
 
-      # >&2 echo "# CURRENT start: $start" 
-      # >&2 echo "# CURRENT end: $end" 
+      log_debug "start: $start" 
+      log_debug "end: $end" 
 
-      # >&2 echo "# CURRENT ri: $ri" 
-      # >&2 echo "# CURRENT r[ri]: ${r[ri]}" 
-      # >&2 echo "# CURRENT ${#r}: ${#r}" 
-
-      # if [ -z "$start" ] || [ -z "$end" ]
-      # then 
-      #   let ri++
-      #   continue
-      # fi
-
-
-
-      # >&2 declare -p charColors 
+      log_debug "ri: $ri" 
+      log_debug "color_map[ri]: ${color_map[ri]}" 
+      log_debug "${#r}: ${#r}" 
 
       let ri++
     done
 
     local outputLine=""
     
-    >&2 declare -p charColors 
+    log_debug "$(declare -p charColors)"
 
     local firstKey=("${!charColors[@]}")
-    # >&2 echo "# firstKey=${firstKey}" 
+    log_debug "firstKey: ${firstKey}" 
 
     local lastLineIndex=0
 
@@ -97,7 +93,7 @@ hi() {
     local colorStart=${firstKey}
     local colorEnd=${firstKey}
 
-    # >&2 echo "# INI color=${color}" 
+    log_debug "color: ${color}" 
 
     for charColorIndex in "${!charColors[@]}"
     do
@@ -105,11 +101,9 @@ hi() {
       let diff=charColorIndex-colorEnd
       if [[ "$color" != "$charColor" ]] || [ $diff -gt 1 ]
       then
-        >&2 echo '** "$color" != "$charColor"' 
-
-        >&2 echo "# color=${color}" 
-        >&2 echo "# colorStart=${colorStart}" 
-        >&2 echo "# colorEnd=${colorEnd}" 
+        log_debug "color=${color}" 
+        log_debug "colorStart=${colorStart}" 
+        log_debug "colorEnd=${colorEnd}" 
 
         outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
         outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
@@ -124,13 +118,13 @@ hi() {
       fi
 
       colorEnd=$charColorIndex
-      # >&2 echo "# colorEnd=${colorEnd}" 
+      log_debug "colorEnd: ${colorEnd}" 
     done
 
 
-    >&2 echo "# color=${color}" 
-    >&2 echo "# colorStart=${colorStart}" 
-    >&2 echo "# colorEnd=${colorEnd}" 
+    log_debug "color: ${color}" 
+    log_debug "colorStart: ${colorStart}" 
+    log_debug "colorEnd: ${colorEnd}" 
 
     outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
     outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
@@ -140,7 +134,7 @@ hi() {
     lastLineIndex=${colorEnd}-1
     outputLine="${outputLine}${line:lastLineIndex}"
 
-    # >&2 echo "# INPUT $line" 
+    log_debug "line: $line" 
     echo "$outputLine"
   done
 
