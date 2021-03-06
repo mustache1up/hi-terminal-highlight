@@ -2,7 +2,7 @@ hi() {
 
 
   usage() {
-      echo "usage: SOME_COMMAND | hi regex1 [regexN...]" >&2
+      >&2 echo "# usage: SOME_COMMAND | hi regex1 [regexN...]" 
   }
 
   # detect pipe or tty
@@ -21,7 +21,7 @@ hi() {
   r[6]=36 #cyan
 
   if [[ "$#" -gt ${#r[@]} ]]; then
-    echo "More regex patterns received than available colors."
+    >&2 echo "More regex patterns received than available colors."
     return 1
   fi
 
@@ -29,7 +29,7 @@ hi() {
 
   for line in $(cat)
   do
-    echo "CURRENT line: $line" >&2
+    # >&2 echo "# CURRENT line: $line" 
 
     local ri=0
     unset charColors
@@ -37,42 +37,55 @@ hi() {
 
     for regex in "$@"
     do
-      echo "CURRENT regex: $regex" >&2
-      local se=$(echo "$line" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
-      echo "CURRENT se: $se" >&2
 
-      start=${se%-*}
-      echo "CURRENT start: $start" >&2
-      end=${se#*-}
-      echo "CURRENT end: $end" >&2
+      local lineIndex=0
+      local se=0-0
 
-      echo "CURRENT ri: $ri" >&2
-      echo "CURRENT r[ri]: ${r[ri]}" >&2
-      echo "CURRENT ${#r}: ${#r}" >&2
+      # >&2 echo "# CURRENT regex: $regex" 
+      while true
+      do
+        local se=$(echo "${line:${lineIndex}}" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
+        # >&2 echo "# CURRENT se: $se" 
+        [ -z "$se" ] && break
 
-      for i in $(seq $start $end)
-      do 
-        echo "CURRENT i: ${i}" >&2
+        let start=${se%-*}+$lineIndex
+        let end=${se#*-}+$lineIndex
+        lineIndex=$end
+        # >&2 echo "$start -> $end"
 
-
-        charColors[$i]="${r[ri]}"
+        for i in $(seq $start $end)
+        do 
+          # >&2 echo "# CURRENT i: ${i}" 
+          charColors[$i]="${r[ri]}"
+        done
       done
 
-      declare -p charColors >&2
+      # >&2 echo "# CURRENT start: $start" 
+      # >&2 echo "# CURRENT end: $end" 
+
+      # >&2 echo "# CURRENT ri: $ri" 
+      # >&2 echo "# CURRENT r[ri]: ${r[ri]}" 
+      # >&2 echo "# CURRENT ${#r}: ${#r}" 
+
+      # if [ -z "$start" ] || [ -z "$end" ]
+      # then 
+      #   let ri++
+      #   continue
+      # fi
+
+
+
+      # >&2 declare -p charColors 
 
       let ri++
-      # if [ $ri -eq ${#r} ]
-      # then
-      #   ri=0
-      # fi
     done
 
     local outputLine=""
     
-    declare -p charColors >&2
+    # >&2 declare -p charColors 
 
     local firstKey=("${!charColors[@]}")
-    echo "firstKey=${firstKey}" >&2
+    # >&2 echo "# firstKey=${firstKey}" 
 
     local lastLineIndex=0
 
@@ -80,18 +93,18 @@ hi() {
     local colorStart=${firstKey}
     local colorEnd=${firstKey}
 
-    echo "INI color=${color}" >&2
+    # >&2 echo "# INI color=${color}" 
 
     for charColorIndex in "${!charColors[@]}"
     do
       charColor=${charColors[charColorIndex]}
       if [[ "$color" != "$charColor" ]]
       then
-        echo '** "$color" != "$charColor"' >&2
+        # >&2 echo '** "$color" != "$charColor"' 
 
-        echo "# color=${color}" >&2
-        echo "# colorStart=${colorStart}" >&2
-        echo "# colorEnd=${colorEnd}" >&2
+        # >&2 echo "# color=${color}" 
+        # >&2 echo "# colorStart=${colorStart}" 
+        # >&2 echo "# colorEnd=${colorEnd}" 
 
         outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
         outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
@@ -106,13 +119,13 @@ hi() {
       fi
 
       colorEnd=$charColorIndex
-      echo "colorEnd=${colorEnd}" >&2
+      # >&2 echo "# colorEnd=${colorEnd}" 
     done
 
 
-    echo "# color=${color}" >&2
-    echo "# colorStart=${colorStart}" >&2
-    echo "# colorEnd=${colorEnd}" >&2
+    # >&2 echo "# color=${color}" 
+    # >&2 echo "# colorStart=${colorStart}" 
+    # >&2 echo "# colorEnd=${colorEnd}" 
 
     outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
     outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
@@ -122,12 +135,8 @@ hi() {
     lastLineIndex=${colorEnd}-1
     outputLine="${outputLine}${line:lastLineIndex}"
 
-    echo "# INPUT $line" >&2
+    # >&2 echo "# INPUT $line" 
     echo "$outputLine"
   done
 
 }
-
-# cat ~/Desktop/validation_tratado_copy.txt | highlight cyan "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | highlight green Connected | highlight red 'timed out' | highlight yellow refused | tail
-# cat ~/Desktop/validation_tratado_copy.txt | tail | highlight yellow refused | highlight green Connected | highlight cyan "([0-9]{1,3}\.){3}[0-9]{1,3}" | highlight magenta ":[0-9]+" | highlight blue "[0-9]+" | cat -A
-# cat ~/Desktop/validation_tratado_copy.txt | hi from ref..ed result sul [0-9]+ "([0-9]{1,3}\.){3}[0-9]{1,3}"

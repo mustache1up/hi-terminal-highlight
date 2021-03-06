@@ -36,4 +36,10 @@ testTwoOverlapingRegexesLongerAfter() {
   assertEquals "${expected}" "${actual}" 
 }
 
+testSinglePatternRegexNultipleOccurences() {
+  actual="$(echo "aaabbbcccbbb" | hi b+ 2> /dev/null)"
+  expected="$(echo -e "aaa""\e[1;30m""bbb""\e[0m""ccc""\e[1;30m""bbb""\e[0m")"
+  assertEquals "${expected}" "${actual}" 
+}
+
 source shunit2
