@@ -5,11 +5,11 @@ hi() {
   }
 
   log_info() {
-    echo "$@" >&2
+    echo "# INFO - $@" >&2
   }
 
   log_debug() {
-    [ ! -z $DEBUG ] && log_info "# DEBUG - $@"
+    [ ! -z $DEBUG ] && echo "# DEBUG - $@" >&2
   }
 
   # detect pipe or tty
@@ -18,7 +18,7 @@ hi() {
       return
   fi
 
-  ACC=0
+  let ELAPSED_TIME_ACCUMULATOR=0
   
   declare -a color_map;
   color_map[0]=36 #cyan
@@ -46,33 +46,33 @@ hi() {
     for regex in "$@"
     do
 
-      local lineIndex=0
-      local se=0-0
+      local subLine="${line}"
 
       # log_debug "regex: $regex" 
-      while [ ! $lineIndex -ge ${#line} ]
+      while [ ! -z ${#subLine} ]
       do
-        local subLine=${line:${lineIndex}}
-        # log_debug "lineIndex: ${lineIndex} => ${subLine}"
+        # log_debug "subLine: ${subLine}"
 
         STARTTIME=$(date +%s%N) ###################
         [[ "$subLine" =~ $regex ]] || break
-        matched=${BASH_REMATCH[0]}
-        length="${#BASH_REMATCH[0]}"
-        # log_debug "BASH_REMATCH[0]: ${BASH_REMATCH[0]}"
-        # log_debug "#BASH_REMATCH[0]: ${#BASH_REMATCH[0]}"
-        before="${subLine/$matched*/''}"
-        # log_debug "before: ${before}"
-        let relative_start="${#before}"+1
-        let relative_end=relative_start+length
 
-        let start=relative_start+$lineIndex+1
-        let end=relative_end+$lineIndex
-        let lineIndex=$end-1
+        textMatch="${BASH_REMATCH[0]}"
+        # log_debug "textMatch: $textMatch"
+
+        textBeforeMatch="${subLine/$textMatch*/''}"
+
+        let relative_start="${#textBeforeMatch}"
+        let relative_end=relative_start+"${#textMatch}"
+        # log_debug "r: $relative_start -> $relative_end"
+
+        let start=relative_start+"${#line}"-"${#subLine}"
+        let end=relative_end+"${#line}"-"${#subLine}"-1
         # log_debug "$start -> $end"
         ENDTIME=$(date +%s%N) ###############
         ELAPSED=$(($ENDTIME-$STARTTIME))
-        let ACC=$ACC+$ELAPSED
+        let ELAPSED_TIME_ACCUMULATOR=$ELAPSED_TIME_ACCUMULATOR+$ELAPSED
+
+        subLine=${subLine:${relative_end}}
 
         for i in $(seq $start $end)
         do 
@@ -93,7 +93,7 @@ hi() {
 
     local outputLine=""
     
-    # log_debug "$(declare -p charColors)"
+    log_debug "$(declare -p charColors)"
 
     local firstKey=("${!charColors[@]}")
     # log_debug "firstKey: ${firstKey}" 
@@ -116,12 +116,11 @@ hi() {
         # log_debug "colorStart=${colorStart}" 
         # log_debug "colorEnd=${colorEnd}" 
 
-        outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
+        outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
         outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
-        outputLine="${outputLine}${line:colorStart-2:colorEnd-colorStart+1}"
+        outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
         outputLine="${outputLine}$(echo -e "\e[0m")"
-
-        lastLineIndex=${colorEnd}-1
+        lastLineIndex=${colorEnd}+1
 
         color=${charColors[charColorIndex]}
         colorStart=${charColorIndex}
@@ -137,12 +136,12 @@ hi() {
     # log_debug "colorStart: ${colorStart}" 
     # log_debug "colorEnd: ${colorEnd}" 
 
-    outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
+    outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
     outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
-    outputLine="${outputLine}${line:colorStart-2:colorEnd-colorStart+1}"
+    outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
     outputLine="${outputLine}$(echo -e "\e[0m")"
+    lastLineIndex=${colorEnd}+1
 
-    lastLineIndex=${colorEnd}-1
     outputLine="${outputLine}${line:lastLineIndex}"
 
     # log_debug "line: $line" 
@@ -150,6 +149,6 @@ hi() {
   done
 
 
-  echo "It takes $((${ACC}/1000000)) ticks to complete all computed task..." >&2  ###########
+  log_info "It takes $((${ELAPSED_TIME_ACCUMULATOR}/1000000)) ticks to complete all computed task..."  ###########
 
 }

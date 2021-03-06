@@ -4,10 +4,6 @@ source ./hi.sh
 
 export DEBUG=true
 
-testEquality() {
-  assertEquals 1 1
-}
-
 testSingleWordRegex() {
   actual="$(echo "aaabbbccc" | hi b )"
   expected="$(echo -e "aaa""\e[1;36m""bbb""\e[0m""ccc")"
