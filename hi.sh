@@ -20,6 +20,11 @@ hi() {
   r[5]=35 #magenta
   r[6]=36 #cyan
 
+  if [[ "$#" -gt ${#r[@]} ]]; then
+    echo "More regex patterns received than available colors."
+    return 1
+  fi
+
   IFS=$'\n'
 
   for line in $(cat)
@@ -114,7 +119,10 @@ hi() {
     outputLine="${outputLine}${line:colorStart-2:colorEnd-colorStart+1}"
     outputLine="${outputLine}$(echo -e "\e[0m")"
 
-    echo "$line"
+    lastLineIndex=${colorEnd}-1
+    outputLine="${outputLine}${line:lastLineIndex}"
+
+    echo "# INPUT $line" >&2
     echo "$outputLine"
   done
 
@@ -122,4 +130,4 @@ hi() {
 
 # cat ~/Desktop/validation_tratado_copy.txt | highlight cyan "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | highlight green Connected | highlight red 'timed out' | highlight yellow refused | tail
 # cat ~/Desktop/validation_tratado_copy.txt | tail | highlight yellow refused | highlight green Connected | highlight cyan "([0-9]{1,3}\.){3}[0-9]{1,3}" | highlight magenta ":[0-9]+" | highlight blue "[0-9]+" | cat -A
-cat ~/Desktop/validation_tratado_copy.txt | hi from ref..ed result sul [0-9]+ "([0-9]{1,3}\.){3}[0-9]{1,3}"
+# cat ~/Desktop/validation_tratado_copy.txt | hi from ref..ed result sul [0-9]+ "([0-9]{1,3}\.){3}[0-9]{1,3}"
