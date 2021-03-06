@@ -26,50 +26,102 @@ hi() {
 
   for line in $(cat)
   do
-    echo "CURRENT line: $line"
+    # echo "CURRENT line: $line"
 
     local ri=0
+    unset charColors
+    declare -a charColors
 
     for regex in "$@"
     do
-      echo "CURRENT regex: $regex"
-      local se=$(echo "$line" | awk -v "regex=$regex" ' match($0, regex) { print ";"RSTART+1"-"RSTART+RLENGTH}')
-      echo "CURRENT se: $se"
-      r[ri]+=$se
-      echo "CURRENT ri: $ri"
-      echo "CURRENT r[ri]: ${r[ri]}"
+      # echo "CURRENT regex: $regex"
+      local se=$(echo "$line" | awk -v "regex=$regex" ' match($0, regex) { print RSTART+1"-"RSTART+RLENGTH}')
+      # echo "CURRENT se: $se"
 
-      let ri=$_mIndex+1
-    done
+      start=${se%-*}
+      # echo "CURRENT start: $start"
+      end=${se#*-}
+      # echo "CURRENT end: $end"
+
+      # echo "CURRENT ri: $ri"
+      # echo "CURRENT r[ri]: ${r[ri]}"
+
+      for i in $(seq $start $end)
+      do 
+        # echo "CURRENT i: ${i}"
 
 
-    for item in "${r[@]}"
-    do
-      # echo "CURRENT item: $item"
-
-      IFS=';'
-      for subItem in $item
-      do
-        if ! [[ $subItem =~ - ]]
-        then
-          code=$subItem
-          continue
-        fi
-        echo "CURRENT code: $code"
-        # echo "CURRENT subItem: $subItem"
-        start=${subItem%-*}
-        echo "CURRENT start: $start"
-        end=${subItem#*-}
-        echo "CURRENT end: $end"
+        charColors[$i]="${r[ri]}"
       done
+
+      # echo "CURRENT charColors: $(declare -p charColors)"
+
+
+      let ri++
     done
 
-    echo "*** OUTPUT: $line"
+    ############## TODO: iterar as paradas por char, array sparse, se mudar, aplicar os codes.
+
+    local outputLine=""
+    
+    declare -p charColors
+
+    local firstKey=("${!charColors[@]}")
+    echo "firstKey=${firstKey}"
+
+    local lastLineIndex=0
+
+    local color=${charColors[firstKey]}
+    local colorStart=${firstKey}
+    local colorEnd=${firstKey}
+
+    echo "INI color=${color}"
+
+    for charColorIndex in "${!charColors[@]}"
+    do
+      charColor=${charColors[charColorIndex]}
+      if [[ "$color" != "$charColor" ]]
+      then
+        # echo '** "$color" != "$charColor"'
+
+        echo "# color=${color}"
+        echo "# colorStart=${colorStart}"
+        echo "# colorEnd=${colorEnd}"
+
+        outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
+        outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
+        outputLine="${outputLine}${line:colorStart-2:colorEnd-colorStart+1}"
+        outputLine="${outputLine}$(echo -e "\e[0m")"
+
+        lastLineIndex=${colorEnd}-1
+
+        color=${charColors[charColorIndex]}
+        colorStart=${charColorIndex}
+        colorEnd=$charColorIndex
+      fi
+
+      colorEnd=$charColorIndex
+      # echo "colorEnd=${colorEnd}"
+    done
+
+
+    echo "# color=${color}"
+    echo "# colorStart=${colorStart}"
+    echo "# colorEnd=${colorEnd}"
+
+    outputLine="${outputLine}${line:lastLineIndex:colorStart-2-lastLineIndex}"
+    outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
+    outputLine="${outputLine}${line:colorStart-2:colorEnd-colorStart+1}"
+    outputLine="${outputLine}$(echo -e "\e[0m")"
+
+    echo "*** INPUT : $line"
+    echo "*** OUTPUT: $outputLine"
   done
 
 }
+
 # cat ~/Desktop/validation_tratado_copy.txt | highlight cyan "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | highlight green Connected | highlight red 'timed out' | highlight yellow refused | tail
 # cat ~/Desktop/validation_tratado_copy.txt | tail | highlight yellow refused | highlight green Connected | highlight cyan "([0-9]{1,3}\.){3}[0-9]{1,3}" | highlight magenta ":[0-9]+" | highlight blue "[0-9]+" | cat -A
-cat ~/Desktop/validation_tratado_copy.txt | tail -2 | hi re..lt ref..ed
+cat ~/Desktop/validation_tratado_copy.txt | tail -2 | hi ref..ed result
 
 #cat ~/Desktop/validation_tratado_copy.txt | tail | 
