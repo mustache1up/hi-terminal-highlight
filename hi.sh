@@ -14,13 +14,11 @@ hi() {
   declare -a r;
   r[0]=30 #black
   r[1]=31 #red
-  # m[green]=32
-  # m[yellow]=33
-  # m[blue]=34
-  # m[magenta]=35
-  # m[cyan]=36
-
-  # declare -a r;
+  r[2]=32 #green
+  r[3]=33 #yellow
+  r[4]=34 #blue
+  r[5]=35 #magenta
+  r[6]=36 #cyan
 
   IFS=$'\n'
 
@@ -45,6 +43,7 @@ hi() {
 
       # echo "CURRENT ri: $ri"
       # echo "CURRENT r[ri]: ${r[ri]}"
+      # echo "CURRENT ${#r}: ${#r}"
 
       for i in $(seq $start $end)
       do 
@@ -56,11 +55,12 @@ hi() {
 
       # echo "CURRENT charColors: $(declare -p charColors)"
 
-
       let ri++
+      # if [ $ri -eq ${#r} ]
+      # then
+      #   ri=0
+      # fi
     done
-
-    ############## TODO: iterar as paradas por char, array sparse, se mudar, aplicar os codes.
 
     local outputLine=""
     
@@ -122,6 +122,6 @@ hi() {
 
 # cat ~/Desktop/validation_tratado_copy.txt | highlight cyan "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | highlight green Connected | highlight red 'timed out' | highlight yellow refused | tail
 # cat ~/Desktop/validation_tratado_copy.txt | tail | highlight yellow refused | highlight green Connected | highlight cyan "([0-9]{1,3}\.){3}[0-9]{1,3}" | highlight magenta ":[0-9]+" | highlight blue "[0-9]+" | cat -A
-cat ~/Desktop/validation_tratado_copy.txt | tail -2 | hi ref..ed result
+cat ~/Desktop/validation_tratado_copy.txt | tail -2 | hi from ref..ed result sul [0-9]+
 
 #cat ~/Desktop/validation_tratado_copy.txt | tail | 
