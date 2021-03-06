@@ -17,11 +17,8 @@ hi() {
       usage
       return
   fi
-
-  let ELAPSED_TIME_ACCUMULATOR=0
-
-  local ESCAPED_E=$(echo -e "\e")
   
+  ESCAPED_E=$'\e'
   declare -a color_map;
   color_map[0]=36 #cyan
   color_map[1]=32 #green
@@ -32,127 +29,70 @@ hi() {
   color_map[6]=30 #black
 
   if [[ "$#" -gt ${#color_map[@]} ]]; then
-    # log_debug "#More regex patterns received than available colors."
     return 1
   fi
 
-  IFS=$'\n'
-  for line in $(cat)
+  declare -a char_colors
+
+  while read line
   do
-    # log_debug "line: $line" 
-
-    local ri=0
-    unset charColors
-    declare -a charColors
-
+    color_map_index=0
+    char_colors=()
     for regex in "$@"
     do
-
-      local subLine="${line}"
-
-      # log_debug "regex: $regex" 
-      while [ ! -z ${#subLine} ]
+      current_color="${color_map[color_map_index]}"
+      sub_line="${line}"
+      while [ ! -z ${#sub_line} ]
       do
-        # log_debug "subLine: ${subLine}"
-
-        [[ "$subLine" =~ $regex ]] || break
-
-        textMatch="${BASH_REMATCH[0]}"
-        # log_debug "textMatch: $textMatch"
-
-        textBeforeMatch="${subLine/$textMatch*/''}"
-
-        let relative_start="${#textBeforeMatch}"
-        let relative_end=relative_start+"${#textMatch}"
-        # log_debug "r: $relative_start -> $relative_end"
-
-        let start=relative_start+"${#line}"-"${#subLine}"
-        let end=relative_end+"${#line}"-"${#subLine}"-1
-        # log_debug "$start -> $end"
-
-        subLine=${subLine:${relative_end}}
-
-        for i in $(seq $start $end)
+        [[ "$sub_line" =~ $regex ]] || break
+        text_match="${BASH_REMATCH[0]}"
+        text_before_match="${sub_line/$text_match*/''}"
+        let relative_start="${#text_before_match}"
+        let relative_end=relative_start+"${#text_match}"
+        let start=relative_start+"${#line}"-"${#sub_line}"
+        let end=relative_end+"${#line}"-"${#sub_line}"-1
+        sub_line=${sub_line:${relative_end}}
+        for (( i=$start; i<=$end; i++ ))
         do 
-          # log_debug "i: ${i}" 
-          charColors[$i]="${color_map[ri]}"
+          char_colors[$i]=${current_color}
         done
       done
-
-      # log_debug "start: $start" 
-      # log_debug "end: $end" 
-
-      # log_debug "ri: $ri" 
-      # log_debug "color_map[ri]: ${color_map[ri]}" 
-      # log_debug "${#r}: ${#r}" 
-
-      let ri++
+      let color_map_index++
     done
-
     
-    # log_debug "$(declare -p charColors)"
-
-    local firstKey=("${!charColors[@]}")
-    # log_debug "firstKey: ${firstKey}" 
-
-    local lastLineIndex=0
-
-    local color=${charColors[firstKey]}
-    local colorStart=${firstKey}
-    local colorEnd=${firstKey}
-
-    # log_debug "color: ${color}" 
-
-    local outputLine=""
-
-    for charColorIndex in "${!charColors[@]}"
+    firstKey=("${!char_colors[@]}")
+    current_line_index=0
+    color=${char_colors[firstKey]}
+    color_start_index=${firstKey}
+    color_end_index=${firstKey}
+    output_line=""
+    for char_color_index in "${!char_colors[@]}"
     do
-      charColor=${charColors[charColorIndex]}
-      let diff=charColorIndex-colorEnd
-      if [[ "$color" != "$charColor" ]] || [ $diff -gt 1 ]
+      current_char_color=${char_colors[char_color_index]}
+      let diff=char_color_index-color_end_index
+      if [[ "$color" != "$current_char_color" ]] || [ $diff -gt 1 ]
       then
+        output_line="${output_line}"\
+"${line:current_line_index:color_start_index-current_line_index}"\
+"${ESCAPED_E}[1;"\
+"${color}m"\
+"${line:color_start_index:color_end_index-color_start_index+1}"\
+"${ESCAPED_E}[0m"
 
-        STARTTIME=$(date +%s%N) ###################
-        # log_debug "color=${color}" 
-        # log_debug "colorStart=${colorStart}" 
-        # log_debug "colorEnd=${colorEnd}" 
-
-        outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
-        outputLine="${outputLine}${ESCAPED_E}[1;${color}m"
-        outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
-        outputLine="${outputLine}${ESCAPED_E}[0m"
-        lastLineIndex=${colorEnd}+1
-
-        color=${charColors[charColorIndex]}
-        colorStart=${charColorIndex}
-        colorEnd=$charColorIndex
-
-        ENDTIME=$(date +%s%N) ###############
-        ELAPSED=$(($ENDTIME-$STARTTIME))
-        let ELAPSED_TIME_ACCUMULATOR=$ELAPSED_TIME_ACCUMULATOR+$ELAPSED
+        current_line_index=${color_end_index}+1
+        color=${char_colors[char_color_index]}
+        color_start_index=${char_color_index}
       fi
-
-      colorEnd=$charColorIndex
-      # log_debug "colorEnd: ${colorEnd}" 
+      color_end_index=$char_color_index
     done
+    output_line="${output_line}"\
+"${line:current_line_index:color_start_index-current_line_index}"\
+"${ESCAPED_E}[1;"\
+"${color}m"\
+"${line:color_start_index:color_end_index-color_start_index+1}"\
+"${ESCAPED_E}[0m"\
+"${line:color_end_index+1}"
 
-
-    # log_debug "color: ${color}" 
-    # log_debug "colorStart: ${colorStart}" 
-    # log_debug "colorEnd: ${colorEnd}" 
-
-    outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
-    outputLine="${outputLine}${ESCAPED_E}[1;${color}m"
-    outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
-    outputLine="${outputLine}${ESCAPED_E}[0m"
-    lastLineIndex=${colorEnd}+1
-
-    outputLine="${outputLine}${line:lastLineIndex}"
-
-    # log_debug "line: $line" 
-    echo "$outputLine"
+    echo "$output_line"
   done
-
-  log_info "It takes $((${ELAPSED_TIME_ACCUMULATOR}/1000000)) ticks to complete all computed task..."  ###########
-
 }
