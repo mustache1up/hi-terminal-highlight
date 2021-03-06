@@ -19,6 +19,8 @@ hi() {
   fi
 
   let ELAPSED_TIME_ACCUMULATOR=0
+
+  local ESCAPED_E=$(echo -e "\e")
   
   declare -a color_map;
   color_map[0]=36 #cyan
@@ -53,7 +55,6 @@ hi() {
       do
         # log_debug "subLine: ${subLine}"
 
-        STARTTIME=$(date +%s%N) ###################
         [[ "$subLine" =~ $regex ]] || break
 
         textMatch="${BASH_REMATCH[0]}"
@@ -68,9 +69,6 @@ hi() {
         let start=relative_start+"${#line}"-"${#subLine}"
         let end=relative_end+"${#line}"-"${#subLine}"-1
         # log_debug "$start -> $end"
-        ENDTIME=$(date +%s%N) ###############
-        ELAPSED=$(($ENDTIME-$STARTTIME))
-        let ELAPSED_TIME_ACCUMULATOR=$ELAPSED_TIME_ACCUMULATOR+$ELAPSED
 
         subLine=${subLine:${relative_end}}
 
@@ -91,9 +89,8 @@ hi() {
       let ri++
     done
 
-    local outputLine=""
     
-    log_debug "$(declare -p charColors)"
+    # log_debug "$(declare -p charColors)"
 
     local firstKey=("${!charColors[@]}")
     # log_debug "firstKey: ${firstKey}" 
@@ -106,25 +103,33 @@ hi() {
 
     # log_debug "color: ${color}" 
 
+    local outputLine=""
+
     for charColorIndex in "${!charColors[@]}"
     do
       charColor=${charColors[charColorIndex]}
       let diff=charColorIndex-colorEnd
       if [[ "$color" != "$charColor" ]] || [ $diff -gt 1 ]
       then
+
+        STARTTIME=$(date +%s%N) ###################
         # log_debug "color=${color}" 
         # log_debug "colorStart=${colorStart}" 
         # log_debug "colorEnd=${colorEnd}" 
 
         outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
-        outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
+        outputLine="${outputLine}${ESCAPED_E}[1;${color}m"
         outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
-        outputLine="${outputLine}$(echo -e "\e[0m")"
+        outputLine="${outputLine}${ESCAPED_E}[0m"
         lastLineIndex=${colorEnd}+1
 
         color=${charColors[charColorIndex]}
         colorStart=${charColorIndex}
         colorEnd=$charColorIndex
+
+        ENDTIME=$(date +%s%N) ###############
+        ELAPSED=$(($ENDTIME-$STARTTIME))
+        let ELAPSED_TIME_ACCUMULATOR=$ELAPSED_TIME_ACCUMULATOR+$ELAPSED
       fi
 
       colorEnd=$charColorIndex
@@ -137,9 +142,9 @@ hi() {
     # log_debug "colorEnd: ${colorEnd}" 
 
     outputLine="${outputLine}${line:lastLineIndex:colorStart-lastLineIndex}"
-    outputLine="${outputLine}$(echo -e "\e[1;${color}m")"
+    outputLine="${outputLine}${ESCAPED_E}[1;${color}m"
     outputLine="${outputLine}${line:colorStart:colorEnd-colorStart+1}"
-    outputLine="${outputLine}$(echo -e "\e[0m")"
+    outputLine="${outputLine}${ESCAPED_E}[0m"
     lastLineIndex=${colorEnd}+1
 
     outputLine="${outputLine}${line:lastLineIndex}"
@@ -147,7 +152,6 @@ hi() {
     # log_debug "line: $line" 
     echo "$outputLine"
   done
-
 
   log_info "It takes $((${ELAPSED_TIME_ACCUMULATOR}/1000000)) ticks to complete all computed task..."  ###########
 
