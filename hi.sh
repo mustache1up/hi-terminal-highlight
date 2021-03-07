@@ -12,13 +12,14 @@ hi() {
     [ ! -z $DEBUG ] && echo "# DEBUG - $@" >&2
   }
 
-  # detect pipe or tty
-  if [[ -t 0 ]]; then
+  if [[ -t 0 ]]
+  then
       usage
       return
   fi
-  
+
   ESCAPED_E=$'\e'
+
   declare -a color_map;
   color_map[0]=36 #cyan
   color_map[1]=32 #green
@@ -42,13 +43,11 @@ hi() {
     do
       current_color="${color_map[color_map_index]}"
       sub_line="${line}"
-      while [ ! -z ${#sub_line} ]
+      while [ ! -z ${#sub_line} ] && [[ "$sub_line" =~ $regex ]]
       do
-        [[ "$sub_line" =~ $regex ]] || break
-        text_match="${BASH_REMATCH[0]}"
-        text_before_match="${sub_line/$text_match*/''}"
+        text_before_match="${sub_line/${BASH_REMATCH[0]}*/''}"
         let relative_start="${#text_before_match}"
-        let relative_end=relative_start+"${#text_match}"
+        let relative_end=relative_start+"${#BASH_REMATCH[0]}"
         let start=relative_start+"${#line}"-"${#sub_line}"
         let end=relative_end+"${#line}"-"${#sub_line}"-1
         sub_line=${sub_line:${relative_end}}
@@ -74,8 +73,7 @@ hi() {
       then
         output_line="${output_line}"\
 "${line:current_line_index:color_start_index-current_line_index}"\
-"${ESCAPED_E}[1;"\
-"${color}m"\
+"${ESCAPED_E}[1;${color}m"\
 "${line:color_start_index:color_end_index-color_start_index+1}"\
 "${ESCAPED_E}[0m"
 
@@ -87,8 +85,7 @@ hi() {
     done
     output_line="${output_line}"\
 "${line:current_line_index:color_start_index-current_line_index}"\
-"${ESCAPED_E}[1;"\
-"${color}m"\
+"${ESCAPED_E}[1;${color}m"\
 "${line:color_start_index:color_end_index-color_start_index+1}"\
 "${ESCAPED_E}[0m"\
 "${line:color_end_index+1}"
