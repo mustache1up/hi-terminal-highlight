@@ -75,9 +75,7 @@ hi() {
       ((diff=char_color_index-color_end_index))
       if [[ "$color" != "$current_char_color" ]] || [ $diff -gt 1 ] 
       then
-        uncolored_text="${line:current_line_index:color_start_index-current_line_index}"
-        text_to_be_colored="${line:color_start_index:color_end_index-color_start_index+1}"
-        output_line="${output_line}${uncolored_text}${ESCAPED_E}[1;${color}m${text_to_be_colored}${ESCAPED_E}[0m"
+        output_line="${output_line}${line:current_line_index:color_start_index-current_line_index}${ESCAPED_E}[1;${color}m${line:color_start_index:color_end_index-color_start_index+1}${ESCAPED_E}[0m"
 
         current_line_index=${color_end_index}+1
         color=${char_colors[char_color_index]}
@@ -86,11 +84,10 @@ hi() {
       color_end_index=$char_color_index
     done
 
-    uncolored_text="${line:current_line_index:color_start_index-current_line_index}"
-    text_to_be_colored="${line:color_start_index:color_end_index-color_start_index+1}"
-    output_line="${output_line}${uncolored_text}${ESCAPED_E}[1;${color}m${text_to_be_colored}${ESCAPED_E}[0m${line:color_end_index+1}"
+    output_line="${output_line}${line:current_line_index:color_start_index-current_line_index}${ESCAPED_E}[1;${color}m${line:color_start_index:color_end_index-color_start_index+1}${ESCAPED_E}[0m${line:color_end_index+1}"
 
-    echo "$output_line"
+    printf "%s\n" "${output_line}"
+
   done
 }
 
