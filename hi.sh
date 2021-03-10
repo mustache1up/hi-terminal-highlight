@@ -46,17 +46,17 @@ hi() {
       while [ ! -z ${#sub_line} ] && [[ "$sub_line" =~ $regex ]]
       do
         text_before_match="${sub_line/${BASH_REMATCH[0]}*/''}"
-        let relative_start="${#text_before_match}"
-        let relative_end=relative_start+"${#BASH_REMATCH[0]}"
-        let start=relative_start+"${#line}"-"${#sub_line}"
-        let end=relative_end+"${#line}"-"${#sub_line}"-1
+        relative_start="${#text_before_match}"
+        relative_end=${relative_start}+"${#BASH_REMATCH[0]}"
+        start=${relative_start}+"${#line}"-"${#sub_line}"
+        end=${relative_end}+"${#line}"-"${#sub_line}"-1
         sub_line=${sub_line:${relative_end}}
         for (( i=$start; i<=$end; i++ ))
         do 
           char_colors[$i]=${current_color}
         done
       done
-      let color_map_index++
+      ((color_map_index++))
     done
     
     firstKey=("${!char_colors[@]}")
@@ -68,7 +68,7 @@ hi() {
     for char_color_index in "${!char_colors[@]}"
     do
       current_char_color=${char_colors[char_color_index]}
-      let diff=char_color_index-color_end_index
+      ((diff=char_color_index-color_end_index))
       if [[ "$color" != "$current_char_color" ]] || [ $diff -gt 1 ]
       then
         output_line="${output_line}"\
