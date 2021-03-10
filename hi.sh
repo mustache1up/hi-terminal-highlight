@@ -37,6 +37,8 @@ hi() {
 
   while read line
   do
+    firstKey=-1
+
     color_map_index=0
     char_colors=()
     for regex in "$@"
@@ -46,11 +48,12 @@ hi() {
       while [ ! -z ${#sub_line} ] && [[ "$sub_line" =~ $regex ]]
       do
         text_before_match="${sub_line/${BASH_REMATCH[0]}*/''}"
-        relative_start="${#text_before_match}"
-        relative_end=${relative_start}+"${#BASH_REMATCH[0]}"
-        start=${relative_start}+"${#line}"-"${#sub_line}"
-        end=${relative_end}+"${#line}"-"${#sub_line}"-1
+        ((relative_start="${#text_before_match}"))
+        ((relative_end=${relative_start}+"${#BASH_REMATCH[0]}"))
+        ((start=${relative_start}+"${#line}"-"${#sub_line}"))
+        ((end=${relative_end}+"${#line}"-"${#sub_line}"-1))
         sub_line=${sub_line:${relative_end}}
+        [ ${start} -lt ${firstKey} ] || [ ${firstKey} -lt 0 ] && firstKey=${start}
         for (( i=$start; i<=$end; i++ ))
         do 
           char_colors[$i]=${current_color}
@@ -59,7 +62,8 @@ hi() {
       ((color_map_index++))
     done
     
-    firstKey=("${!char_colors[@]}")
+    [ ${firstKey} -lt 0 ] && continue
+
     current_line_index=0
     color=${char_colors[firstKey]}
     color_start_index=${firstKey}
@@ -69,13 +73,11 @@ hi() {
     do
       current_char_color=${char_colors[char_color_index]}
       ((diff=char_color_index-color_end_index))
-      if [[ "$color" != "$current_char_color" ]] || [ $diff -gt 1 ]
+      if [[ "$color" != "$current_char_color" ]] || [ $diff -gt 1 ] 
       then
-        output_line="${output_line}"\
-"${line:current_line_index:color_start_index-current_line_index}"\
-"${ESCAPED_E}[1;${color}m"\
-"${line:color_start_index:color_end_index-color_start_index+1}"\
-"${ESCAPED_E}[0m"
+        uncolored_text="${line:current_line_index:color_start_index-current_line_index}"
+        text_to_be_colored="${line:color_start_index:color_end_index-color_start_index+1}"
+        output_line="${output_line}${uncolored_text}${ESCAPED_E}[1;${color}m${text_to_be_colored}${ESCAPED_E}[0m"
 
         current_line_index=${color_end_index}+1
         color=${char_colors[char_color_index]}
@@ -83,13 +85,12 @@ hi() {
       fi
       color_end_index=$char_color_index
     done
-    output_line="${output_line}"\
-"${line:current_line_index:color_start_index-current_line_index}"\
-"${ESCAPED_E}[1;${color}m"\
-"${line:color_start_index:color_end_index-color_start_index+1}"\
-"${ESCAPED_E}[0m"\
-"${line:color_end_index+1}"
+
+    uncolored_text="${line:current_line_index:color_start_index-current_line_index}"
+    text_to_be_colored="${line:color_start_index:color_end_index-color_start_index+1}"
+    output_line="${output_line}${uncolored_text}${ESCAPED_E}[1;${color}m${text_to_be_colored}${ESCAPED_E}[0m${line:color_end_index+1}"
 
     echo "$output_line"
   done
 }
+
