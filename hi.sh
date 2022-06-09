@@ -1,7 +1,8 @@
 hi() { 
 
   usage() {
-    log_info "# usage: SOME_COMMAND | hi regex1 [regexN...]"
+    log_info "usage: SOME_COMMAND | hi REGEX [REGEX...]"
+    log_info "currently supports up to 6 REGEXes"
   }
 
   log_info() {
@@ -27,7 +28,6 @@ hi() {
   color_map[3]=31 #red
   color_map[4]=34 #blue
   color_map[5]=35 #magenta
-  color_map[6]=30 #black
 
   if [[ "$#" -gt ${#color_map[@]} ]]; then
     return 1
