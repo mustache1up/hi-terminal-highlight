@@ -6,11 +6,11 @@ hi() {
   }
 
   log_info() {
-    echo "# INFO - $@" >&2
+    echo "INFO - $@" >&2
   }
 
   log_debug() {
-    [ ! -z $DEBUG ] && echo "# DEBUG - $@" >&2
+    [ ! -z $DEBUG ] && echo "DEBUG - $@" >&2
   }
 
   if [[ -t 0 ]]
